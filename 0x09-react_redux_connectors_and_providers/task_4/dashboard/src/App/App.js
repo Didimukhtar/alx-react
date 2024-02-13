@@ -25,17 +25,48 @@ class App extends React.Component {
       {id: 3, name: 'React', credit: 40}
     ];
 
+    this.logIn = this.logIn.bind(this);
+    this.logOut = this.logOut.bind(this);
+    this.markNotificationAsRead = this.markNotificationAsRead.bind(this);
+
     this.state = {
-      user: user
+      user: user,
+      logOut: this.logOut,
+      listNotifications: [
+        {id: 1, value: "New course available", type: "default"},
+        {id: 2, value: "New resume available", type: "urgent"},
+        {id: 3, html: {__html: getLatestNotification()}, type: "urgent"},
+      ]
     };
 
+  }
+
+  markNotificationAsRead(id) {
+    const newList = this.state.listNotifications.filter(not => not.id !== id);
+    this.setState({ listNotifications: newList });
+  }
+
+  logIn(email, password) {
+		this.setState({
+			user: {
+				email,
+				password,
+				isLoggedIn: true
+			}
+		});
+	}
+
+  logOut() {
+		this.setState({
+			user: user
+	  });
   }
 
   handleKeyDown(e) {
     if (e.ctrlKey && e.key === 'h') {
       e.preventDefault();
       alert("Logging you out");
-      this.props.logout();
+      this.logOut();
     }  
   }
 
@@ -51,20 +82,22 @@ class App extends React.Component {
     return (
       <AppContext.Provider value={{
         user: this.state.user,
-        logOut: this.props.logout
+        logOut: this.state.logOut
       }}>
         <React.Fragment>
           <Notification
+            listNotifications={this.state.listNotifications}
+            markNotificationAsRead={this.markNotificationAsRead}
             displayDrawer={this.props.displayDrawer}
             handleDisplayDrawer={this.props.displayNotificationDrawer}
             handleHideDrawer={this.props.hideNotificationDrawer}
           />
           <div className={css(bodyStyles.App)}>
             <Header />
-            {this.props.isLoggedIn ?
+            {this.state.user.isLoggedIn ?
               <BodySectionWithMarginBottom title="Course list"><CourseList listCourses={this.listCourses}/></BodySectionWithMarginBottom>
             : 
-              <BodySectionWithMarginBottom title="Log in to continue"><Login logIn={this.props.login}/></BodySectionWithMarginBottom>
+              <BodySectionWithMarginBottom title="Log in to continue"><Login logIn={this.logIn}/></BodySectionWithMarginBottom>
             }
             <BodySection title="News from the School">
               <p>Random Text</p>
@@ -111,16 +144,14 @@ App.defaultProps = {
 
 export function mapStateToProps(state) {
   return {
-    isLoggedIn: state.ui.get('isUserLoggedIn'),
-    displayDrawer: state.ui.get('isNotificationDrawerVisible')
+    isLoggedIn: state.get('isUserLoggedIn'),
+    displayDrawer: state.get('isNotificationDrawerVisible')
   };
 }
 
 const mapDispatchToProps = {
   displayNotificationDrawer: uiAC.displayNotificationDrawer,
-  hideNotificationDrawer: uiAC.hideNotificationDrawer,
-  login: uiAC.loginRequest,
-  logout: uiAC.logout
+  hideNotificationDrawer: uiAC.hideNotificationDrawer
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(App);
